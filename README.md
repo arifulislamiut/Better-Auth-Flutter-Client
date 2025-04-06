@@ -13,14 +13,13 @@ and the Flutter guide for
 
 # Better Auth Client
 
-A Flutter client for the Better Auth authentication service. Provides simple and secure authentication features with deep linking support for seamless social authentication flows.
+A Flutter client for authentication that provides simple and secure authentication features for your Flutter applications.
 
 ## Features
 
-- Email and password authentication
+- Email and password authentication (sign in and sign up)
 - Social authentication (GitHub, Google, etc.)
-- Secure token storage
-- Flexible deep link handling for OAuth flows
+- User state management with streams
 - Cross-platform compatibility
 
 ## Getting started
@@ -29,7 +28,9 @@ Add the package to your pubspec.yaml:
 
 ```yaml
 dependencies:
-  better_auth_client: ^0.0.1
+  better_auth_client:
+    git:
+      url: https://github.com/mrnpro/Better-Auth-Flutter-Client.git
 ```
 
 Then run:
@@ -38,74 +39,91 @@ Then run:
 flutter pub get
 ```
 
-## Deep Linking Setup
-
-The package includes deep linking functionality using the `app_links` package. Deep links need to be configured in your native app configurations (Android/iOS) and are required for social authentication flows to redirect back to your app after completing authentication.
-
-For detailed setup instructions, see the [NATIVE_DEEP_LINK_SETUP.md](NATIVE_DEEP_LINK_SETUP.md) guide.
-
 ## Usage
 
 ### Initialize the client
 
+Initialize the BetterAuthClient in your main method before running your app:
+
 ```dart
-final authClient = BetterAuthClient(
-  config: BetterAuthConfig(
-    baseUrl: 'https://your-auth-backend.com',
-    clientId: 'your-client-id',
-  ),
-  // Optional: only if your server needs a specific callback URL
-  serverCallbackUrl: 'https://your-backend.com/auth/callback',
-);
+void main() async {
+  // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize the authentication client
+  BetterAuthClient.create(
+    baseUrl: 'https://your-auth-api.com',
+  );
+  
+  // Run your app
+  runApp(MyApp());
+}
 ```
+
+This ensures that authentication is properly set up before your application starts and is available throughout your entire app.
 
 ### Email authentication
 
 ```dart
 // Sign in
-try {
-  final user = await authClient.signInWithEmail(
-    email: 'user@example.com',
-    password: 'password',
-  );
-  print('Signed in: ${user.email}');
-} catch (e) {
-  print('Error signing in: $e');
-}
+final auth = BetterAuthClient.instance;
+await auth.signIn.email(
+  email: 'user@example.com',
+  password: 'password123',
+  onSuccess: (context) {
+    print("Success: ${context.toString()}");
+  },
+  onError: (error) {
+    print("Error: ${error.message.toString()}");
+  },
+);
 
 // Sign up
-try {
-  final user = await authClient.signUpWithEmail(
-    email: 'newuser@example.com',
-    password: 'password',
-  );
-  print('Signed up: ${user.email}');
-} catch (e) {
-  print('Error signing up: $e');
-}
+await auth.signUp.email(
+  email: 'user@example.com',
+  password: 'password123',
+  name: "John Doe",
+  image: "https://example.com/image.png",
+  callbackUrl: "https://example.com/callback",
+  data: {}, // Additional user data
+  onSuccess: (context) {
+    print("Success: ${context.toString()}");
+  },
+  onError: (error) {
+    print("Error: ${error.toString()}");
+  },
+);
 ```
 
 ### Social authentication
 
 ```dart
-// Sign in with GitHub
-try {
-  await authClient.signInWithSocial('github');
-  // The app will open the GitHub authentication page
-  // After authentication, it will redirect back to your app via deep linking
-} catch (e) {
-  print('Error with social sign-in: $e');
-}
+await auth.signIn.social(
+  provider: Providers.google, // or Providers.github
+  onSuccess: (context) {
+    print("Success");
+  },
+  onError: (context) {
+    print("Error");
+  },
+);
+```
+
+### Get Current User
+
+```dart
+final currentUser = await auth.getCurrentUser();
+print("Current User: ${currentUser.toString()}");
 ```
 
 ### Listen to authentication state changes
 
 ```dart
-authClient.authStateChanges.listen((state) {
-  if (state == AuthState.authenticated) {
-    print('User is authenticated: ${authClient.currentUser?.email}');
+BetterAuthClient.instance.userChanges.listen((user) {
+  if (user != null) {
+    print("User is authenticated: ${user.email}");
   } else {
-    print('User is not authenticated');
+    print("User is not authenticated");
   }
 });
 ```
@@ -113,19 +131,12 @@ authClient.authStateChanges.listen((state) {
 ### Sign out
 
 ```dart
-await authClient.signOut();
+await BetterAuthClient.instance.signOut();
 ```
 
-## Cleanup
+## Example
 
-```dart
-// Make sure to dispose the client when no longer needed
-authClient.dispose();
-```
-
-## Additional Information
-
-For more detailed examples, check out the `/example` folder in the repository.
+For a complete example, check out the `example` folder in the repository.
 
 ### Contributing
 
