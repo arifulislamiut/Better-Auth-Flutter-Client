@@ -5,7 +5,7 @@ import '../core/types.dart';
 import 'src/signin_client_impl.dart';
 
 abstract class SigninClient {
-  static SigninClient getInstance(String baseUrl) => SignInClientImpl();
+  static SigninClient get getDefaultInstance => SignInClientImpl();
 
   Future<({BetterAuthException? error, User? user})> email({
     required String email,

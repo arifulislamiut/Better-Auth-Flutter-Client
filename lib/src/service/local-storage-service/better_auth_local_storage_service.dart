@@ -4,9 +4,6 @@ abstract class BetterAuthLocalStorage {
   String userKey = 'user';
   String tokenKey = 'token';
   static BetterAuthLocalStorage? _instance;
-  static void setInstance(BetterAuthLocalStorage? newLocalStorage) {
-    _instance ??= newLocalStorage;
-  }
 
   static BetterAuthLocalStorage get getDefaultInstance =>
       _instance ?? FlutterSecureImpl();

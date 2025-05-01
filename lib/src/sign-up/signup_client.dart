@@ -5,7 +5,7 @@ import 'package:better_auth_client/src/sign-up/src/sign_up_client_impl.dart';
 import '../core/types.dart';
 
 abstract class SignupClient {
-  static SignupClient get instance => SignUpClientImpl();
+  static SignupClient get getDefaultInstance => SignUpClientImpl();
 
   Future<({BetterAuthException? error, User? user})> email({
     required String email,
