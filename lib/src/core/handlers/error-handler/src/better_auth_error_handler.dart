@@ -1,4 +1,3 @@
-import 'package:better_auth_client/src/core/exceptions/app_exceptions.dart';
 import 'package:better_auth_client/src/models/response/better_auth_error_response.dart';
 
 import '../error_handler.dart';

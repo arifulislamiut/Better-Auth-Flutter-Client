@@ -1,4 +1,4 @@
-
+import 'package:better_auth_client/src/core/configs/api_endpoints.dart';
 import 'package:better_auth_client/src/core/handlers/error-handler/error_handler.dart';
 import 'package:better_auth_client/src/core/handlers/error-handler/models/better_auth_exception.dart';
 import 'package:better_auth_client/src/core/types.dart';

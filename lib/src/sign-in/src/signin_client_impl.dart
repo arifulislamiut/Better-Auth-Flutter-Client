@@ -1,3 +1,5 @@
+
+import 'package:better_auth_client/src/core/configs/api_endpoints.dart';
 import 'package:better_auth_client/src/core/configs/enums/providers.dart';
 import 'package:better_auth_client/src/core/handlers/error-handler/models/better_auth_exception.dart';
 import 'package:better_auth_client/src/core/types.dart';

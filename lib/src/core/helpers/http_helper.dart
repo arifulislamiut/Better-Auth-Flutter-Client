@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:better_auth_client/src/core/exceptions/app_exceptions.dart';
 import 'package:http/http.dart';
