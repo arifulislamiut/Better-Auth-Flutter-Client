@@ -21,6 +21,8 @@ mixin HttpHelper {
     } catch (e) {
       if (e is ClientException) {
         throw NetworkException(e.message);
+      } else if (e is AppException) {
+        rethrow;
       } else {
         throw UnknownException('-');
       }
@@ -42,6 +44,8 @@ mixin HttpHelper {
         return UnauthorizedException(message, statusCode, data);
       case 404:
         return NotFoundException(message, statusCode, data);
+      case 422:
+        return UnauthorizedException(message, statusCode, data);
       case 500:
         return InternalServerErrorException(message, statusCode, data);
 
