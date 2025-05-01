@@ -13,7 +13,7 @@ import 'service/http-service/http_service.dart';
 import 'sign-in/signin_client.dart';
 import 'sign-up/signup_client.dart';
 
-class BetterAuthClient {
+class BetterAuthClient with ErrorHandler {
   static BetterAuthClient get instance => BetterAuthClient._internal();
   static BetterAuthLocalStorage? _localStorage;
   static HttpService? _httpService;
@@ -46,7 +46,7 @@ class BetterAuthClient {
       localStorage: localStorage,
       userLocalService: _userLocalService,
     );
-    BetterAuthLocalStorage.setInstance(localStorage);
+
     HttpService.instance.init(baseUrl);
 
     _userLocalService = UserLocalServiceImpl(
@@ -158,19 +158,11 @@ class BetterAuthClient {
         body: {'newPassword': newPassword, 'token': token},
       );
 
-      log('Password reset successful');
       onSuccess?.call(response!);
-      return (data: response, error: null);
     } catch (e) {
-      return (data: null, error: null);
+      final error = handleException(e);
+      onError?.call(error);
     }
-  }
-
-  Future<void> sendVerificationEmail({
-    required String email,
-    required String callbackURL,
-  }) {
-    throw UnimplementedError();
   }
 
   //////// Plugins ////////
