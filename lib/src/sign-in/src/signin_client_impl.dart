@@ -7,7 +7,6 @@ import 'package:better_auth_client/src/models/response/user.dart';
 import 'package:better_auth_client/src/service/http-service/http_service.dart';
 import 'package:better_auth_client/src/service/user-local-service/user_local_service.dart';
 import 'package:better_auth_client/src/sign-in/signin_client.dart';
-
 import '../../core/handlers/error-handler/error_handler.dart';
 import '../../service/local-storage-service/better_auth_local_storage_service.dart';
 
@@ -23,7 +22,10 @@ class SignInClientImpl with ErrorHandler implements SigninClient {
   final HttpService _httpService;
   final UserLocalService _userLocalService;
   @override
-  Future<User> anonymous(Success? onSuccess, Error? onError) {
+  Future<({BetterAuthException? error, User? user})> anonymous({
+    Success<User>? onSuccess,
+    Error<BetterAuthException>? onError,
+  }) async {
     // TODO: implement anonymous
     throw UnimplementedError();
   }
