@@ -14,54 +14,41 @@ class HttpService with HttpHelper {
     this.baseUrl = baseUrl;
   }
 
-  Future<BetterAuthHttpResponse> getRequest(String path) async {
-    return handleRequest(() => http.get(getFullUrl(baseUrl, path)));
-  }
+  Future<BetterAuthHttpResponse> getRequest(String path) =>
+      handleRequest(() => http.get(getFullUrl(baseUrl, path)));
 
   Future<BetterAuthHttpResponse> deleteRequest(
     String path, {
     Map<String, String>? headers,
-  }) async {
-    return handleRequest(
-      () => http.delete(getFullUrl(baseUrl, path), headers: headers),
-    );
-  }
+  }) => handleRequest(
+    () => http.delete(getFullUrl(baseUrl, path), headers: headers),
+  );
 
   Future<BetterAuthHttpResponse> patchRequest(
     String path, {
     Map<String, String>? headers,
     Map<String, dynamic>? body,
-  }) async {
-    return handleRequest(
-      () => http.patch(getFullUrl(baseUrl, path), headers: headers, body: body),
-    );
-  }
+  }) => handleRequest(
+    () => http.patch(getFullUrl(baseUrl, path), headers: headers, body: body),
+  );
 
   Future<BetterAuthHttpResponse> postRequest(
     String path, {
     Map<String, String>? headers = appHeader,
     Map<String, dynamic>? body,
-  }) async {
-    return handleRequest(
-      () => http.post(
-        getFullUrl(baseUrl, path),
-        headers: headers,
-        body: jsonEncode(body),
-      ),
-    );
-  }
+  }) => handleRequest(
+    () => http.post(
+      getFullUrl(baseUrl, path),
+      headers: headers,
+      body: jsonEncode(body),
+    ),
+  );
 
   Future<BetterAuthHttpResponse> putRequest(
     String path, {
     Map<String, String>? headers,
     Map<String, dynamic>? body,
-  }) async {
-    return handleRequest(
-      () => http.put(
-        getFullUrl(baseUrl, path),
-        headers: headers,
-        body: jsonEncode(body),
-      ),
-    );
-  }
+  }) => handleRequest(
+    () => http.put(getFullUrl(baseUrl, path), headers: headers, body: body),
+  );
 }
