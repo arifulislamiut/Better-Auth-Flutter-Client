@@ -34,7 +34,7 @@ class SignInClientImpl with ErrorHandler implements SigninClient {
     Error<BetterAuthException>? onError,
   }) async {
     try {
-      final url = '/api/auth/sign-in/email';
+      final url = ApiEndpoints.signIn;
       final response = await _httpService.postRequest(
         url,
         body: {'email': email, 'password': password},

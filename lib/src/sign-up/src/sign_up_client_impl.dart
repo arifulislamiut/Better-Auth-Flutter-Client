@@ -34,8 +34,7 @@ class SignUpClientImpl with ErrorHandler implements SignupClient {
   }) async {
     try {
       final response = await _httpService.postRequest(
-        '/api/auth/sign-up/email',
-
+        ApiEndpoints.signUp,
         body: {
           'email': email,
           'password': password,

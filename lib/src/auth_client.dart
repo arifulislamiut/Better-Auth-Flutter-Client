@@ -110,7 +110,7 @@ class BetterAuthClient {
   }) async {
     try {
       final response = await _httpService?.postRequest(
-        '/api/auth/forget-password',
+        ApiEndpoints.forgetPassword,
         body: {'email': email},
       );
 
@@ -136,7 +136,7 @@ class BetterAuthClient {
   }) async {
     try {
       final response = await _httpService?.postRequest(
-        '/api/auth/reset-password',
+        ApiEndpoints.resetPassword,
         body: {'newPassword': newPassword, 'token': token},
       );
 
