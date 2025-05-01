@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:developer';
+import 'package:better_auth_client/src/core/handlers/error-handler/error_handler.dart';
 import 'package:better_auth_client/src/core/handlers/error-handler/models/better_auth_exception.dart';
 import 'package:better_auth_client/src/models/response/better_auth_http_response.dart';
 import 'package:better_auth_client/src/service/local-storage-service/better_auth_local_storage_service.dart';
 import 'package:better_auth_client/src/service/user-local-service/user_local_service.dart';
 import 'package:better_auth_client/src/sign-in/src/signin_client_impl.dart';
 import 'package:better_auth_client/src/sign-up/src/sign_up_client_impl.dart';
+import 'core/configs/api_endpoints.dart';
 import 'core/types.dart';
 import 'models/response/user.dart';
 import 'plugins/phone-auth/phone_auth_plugin.dart';
