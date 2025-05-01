@@ -128,7 +128,25 @@ class BetterAuthClient {
     }
   }
 
-  Future<({dynamic data, dynamic error})> resetPassword({
+  Future<void> sendVerificationEmail({
+    required String email,
+    String? callbackURL,
+    Success<BetterAuthHttpResponse>? onSuccess,
+    Error? onError,
+  }) async {
+    try {
+      final response = await _httpService?.postRequest(
+        ApiEndpoints.sendVerificationEmail,
+        body: {'email': email, 'callbackURL': callbackURL},
+      );
+      onSuccess?.call(response!);
+    } catch (e) {
+      final error = handleException(e);
+      onError?.call(error);
+    }
+  }
+
+  Future<void> resetPassword({
     required String newPassword,
     required String token,
     Success<BetterAuthHttpResponse>? onSuccess,
