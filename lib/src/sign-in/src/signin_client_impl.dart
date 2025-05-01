@@ -1,4 +1,3 @@
-
 import 'package:better_auth_client/src/core/configs/api_endpoints.dart';
 import 'package:better_auth_client/src/core/configs/enums/providers.dart';
 import 'package:better_auth_client/src/core/handlers/error-handler/models/better_auth_exception.dart';
@@ -7,6 +6,7 @@ import 'package:better_auth_client/src/models/response/user.dart';
 import 'package:better_auth_client/src/service/http-service/http_service.dart';
 import 'package:better_auth_client/src/service/user-local-service/user_local_service.dart';
 import 'package:better_auth_client/src/sign-in/signin_client.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/handlers/error-handler/error_handler.dart';
 import '../../service/local-storage-service/better_auth_local_storage_service.dart';
 
@@ -68,6 +68,7 @@ class SignInClientImpl with ErrorHandler implements SigninClient {
       );
 
       final {"url": String loginUrl, "redirect": redirect} = res.body;
+      launchUrl(Uri.parse(loginUrl));
       return (error: null, loginUrl: loginUrl);
     } catch (e) {
       final error = handleException(e);
