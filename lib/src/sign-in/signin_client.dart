@@ -14,7 +14,10 @@ abstract class SigninClient {
     Error<BetterAuthException>? onError,
   });
 
-  Future<User> anonymous(Success? onSuccess, Error? onError);
+  Future<({BetterAuthException? error, User? user})> anonymous({
+    Success<User>? onSuccess,
+    Error<BetterAuthException>? onError,
+  });
 
   Future<({BetterAuthException? error, String? loginUrl})> social({
     required Providers provider,
