@@ -51,13 +51,24 @@ class SignInClientImpl with ErrorHandler implements SigninClient {
   }
 
   @override
-  Future<void> social({
+  Future<({BetterAuthException? error, String? loginUrl})> social({
     required Providers provider,
     Map<String, dynamic>? idToken,
     Success<User>? onSuccess,
     Error<BetterAuthException>? onError,
-  }) {
-    // TODO: implement social
-    throw UnimplementedError();
+  }) async {
+    try {
+      final res = await _httpService.postRequest(
+        ApiEndpoints.signInSocial,
+        body: {"provider": provider.name},
+      );
+
+      final {"url": String loginUrl, "redirect": redirect} = res.body;
+      return (error: null, loginUrl: loginUrl);
+    } catch (e) {
+      final error = handleException(e);
+      onError?.call(error);
+      return (error: error, loginUrl: null);
+    }
   }
 }
