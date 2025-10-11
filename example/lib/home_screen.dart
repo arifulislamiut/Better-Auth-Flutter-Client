@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:better_auth_client/better_auth_client.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -68,7 +69,18 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
+      if (generateResult.data == null) {
+        setState(() => _error = 'No 2FA setup data received from server');
+        return;
+      }
+
       final setupData = generateResult.data!;
+      if (setupData.secret.isEmpty ||
+          setupData.qrCodeUrl.isEmpty ||
+          setupData.backupCodes.isEmpty) {
+        setState(() => _error = 'Invalid 2FA setup data received from server');
+        return;
+      }
       // Show dialog to scan QR code and enter code
       await _show2FASetupDialog(setupData);
     } catch (e) {
@@ -99,15 +111,40 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
+                  color: Colors.white,
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  'QR Code URL: ${setupData.qrCodeUrl}',
-                  style: const TextStyle(fontSize: 12),
-                ),
+                child: setupData.qrCodeUrl.isNotEmpty
+                    ? SizedBox(
+                        width: 200.0,
+                        height: 200.0,
+                        child: QrImageView(
+                          data: setupData.qrCodeUrl,
+                          version: QrVersions.auto,
+                          size: 200.0,
+                          errorStateBuilder: (cxt, err) => Center(
+                            child: Text(
+                              'QR Code Error: ${err.toString()}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      )
+                    : const SizedBox(
+                        width: 200.0,
+                        height: 200.0,
+                        child: Center(
+                          child: Text(
+                            'QR Code URL not available',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -178,9 +215,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: () async {
               if (codeController.text.length != 6) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please enter a 6-digit code')),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a 6-digit code')),
+                  );
+                }
                 return;
               }
 
@@ -189,6 +228,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   await BetterAuthClient.instance.twoFactor.enable(
                 code: codeController.text,
               );
+
+              if (!context.mounted) return;
 
               if (enableResult.error != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -264,9 +305,11 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() => _error = result.error!.message);
       } else {
         setState(() => _is2FAEnabled = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('2FA disabled successfully')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('2FA disabled successfully')),
+          );
+        }
       }
     } catch (e) {
       setState(() => _error = e.toString());
