@@ -73,10 +73,7 @@ class TwoFactorEnableResponse {
   final bool enabled;
   final String backupCodes;
 
-  TwoFactorEnableResponse({
-    required this.enabled,
-    required this.backupCodes,
-  });
+  TwoFactorEnableResponse({required this.enabled, required this.backupCodes});
 
   factory TwoFactorEnableResponse.fromJson(Map<String, dynamic> json) {
     return TwoFactorEnableResponse(
@@ -86,10 +83,7 @@ class TwoFactorEnableResponse {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'enabled': enabled,
-      'backupCodes': backupCodes,
-    };
+    return {'enabled': enabled, 'backupCodes': backupCodes};
   }
 }
 
@@ -98,7 +92,7 @@ class TwoFactorClientImpl with ErrorHandler implements TwoFactorClient {
   final HttpService _httpService;
 
   TwoFactorClientImpl({HttpService? httpService})
-      : _httpService = httpService ?? HttpService.instance;
+    : _httpService = httpService ?? HttpService.instance;
 
   @override
   Future<({BetterAuthException? error, TwoFactorSetupData? data})> generate({
@@ -106,7 +100,9 @@ class TwoFactorClientImpl with ErrorHandler implements TwoFactorClient {
     Error<BetterAuthException>? onError,
   }) async {
     try {
-      final response = await _httpService.postRequest('/api/auth/two-factor/generate');
+      final response = await _httpService.postRequest(
+        '/api/auth/two-factor/generate',
+      );
 
       final setupData = TwoFactorSetupData.fromJson(response.body['data']);
       onSuccess?.call(setupData);
@@ -131,7 +127,9 @@ class TwoFactorClientImpl with ErrorHandler implements TwoFactorClient {
         body: {'code': code},
       );
 
-      final enableResponse = TwoFactorEnableResponse.fromJson(response.body['data']);
+      final enableResponse = TwoFactorEnableResponse.fromJson(
+        response.body['data'],
+      );
       onSuccess?.call(enableResponse);
 
       return (error: null, data: enableResponse);
@@ -194,7 +192,9 @@ class TwoFactorClientImpl with ErrorHandler implements TwoFactorClient {
     Error<BetterAuthException>? onError,
   }) async {
     try {
-      final response = await _httpService.getRequest('/api/auth/two-factor/status');
+      final response = await _httpService.getRequest(
+        '/api/auth/two-factor/status',
+      );
 
       final enabled = response.body['data']['enabled'] as bool;
       onSuccess?.call(enabled);
