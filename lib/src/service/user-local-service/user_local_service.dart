@@ -17,7 +17,10 @@ class UserLocalServiceImpl extends UserLocalService {
   final String _userKey = 'user-key';
   final StreamController<User?> _userController =
       StreamController<User?>.broadcast();
-  UserLocalServiceImpl({required this.localStorageService});
+  UserLocalServiceImpl({required this.localStorageService}) {
+    // Emit initial null value to indicate no user is loaded yet
+    _userController.add(null);
+  }
   @override
   Future<void> deleteUser() async {
     try {

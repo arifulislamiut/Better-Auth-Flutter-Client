@@ -16,24 +16,17 @@ class AuthWrapperWidget extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: _auth.userChanges,
       builder: (context, snapshot) {
-        dev.log('🔄 AuthWrapper: Stream state: ${snapshot.connectionState}, hasData: ${snapshot.hasData}, data: ${snapshot.data?.email}');
-        
-        // Show loading while checking authentication
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          dev.log('⏳ AuthWrapper: Waiting for auth state...');
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        
+        dev.log(
+            '🔄 AuthWrapper: Stream state: ${snapshot.connectionState}, hasData: ${snapshot.hasData}, data: ${snapshot.data?.email}');
+
         // If we have user data, show authenticated screen
         if (snapshot.hasData && snapshot.data != null) {
           dev.log('✅ AuthWrapper: User authenticated: ${snapshot.data!.email}');
           return onAuthenticatedChild;
         }
-        
-        // Otherwise show login/signup screen
-        dev.log('🔒 AuthWrapper: Not authenticated, showing auth screen');
+
+        // For any other state (waiting, no data, null data), show login screen
+        dev.log('🔒 AuthWrapper: Not authenticated or loading, showing auth screen');
         return onAuthorizedChild;
       },
     );

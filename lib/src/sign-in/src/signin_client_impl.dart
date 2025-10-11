@@ -31,7 +31,7 @@ class SignInClientImpl with ErrorHandler implements SigninClient {
   }
 
   @override
-  Future<({BetterAuthException? error, User? user})> email({
+  Future<({BetterAuthException? error, User? user, bool? requiresTwoFactor})> email({
     required String email,
     required String password,
     Success<User>? onSuccess,
@@ -43,9 +43,52 @@ class SignInClientImpl with ErrorHandler implements SigninClient {
         url,
         body: {'email': email, 'password': password},
       );
+
+      // Check if 2FA is required
+      final requiresTwoFactor = response.body['data']?['requiresTwoFactor'] as bool? ?? false;
+
+      if (requiresTwoFactor) {
+        // Return partial user data and 2FA requirement flag
+        final userData = response.body['data']['user'];
+        final user = User(
+          id: userData['id'],
+          name: userData['name'],
+          email: userData['email'],
+          emailVerified: userData['emailVerified'],
+          createdAt: DateTime.parse(userData['createdAt']),
+          updatedAt: DateTime.parse(userData['updatedAt']),
+        );
+        return (error: null, user: user, requiresTwoFactor: true);
+      } else {
+        // Normal sign-in without 2FA
+        final user = User.fromJson(response.body);
+        await _userLocalService.setUser(user);
+        onSuccess?.call(user);
+        return (error: null, user: user, requiresTwoFactor: false);
+      }
+    } catch (e) {
+      final error = handleException(e);
+      onError?.call(error);
+      return (error: error, user: null, requiresTwoFactor: null);
+    }
+  }
+
+  @override
+  Future<({BetterAuthException? error, User? user})> twoFactor({
+    required String code,
+    Success<User>? onSuccess,
+    Error<BetterAuthException>? onError,
+  }) async {
+    try {
+      final response = await _httpService.postRequest(
+        '/api/auth/sign-in/two-factor',
+        body: {'code': code},
+      );
+
       final user = User.fromJson(response.body);
       await _userLocalService.setUser(user);
       onSuccess?.call(user);
+
       return (error: null, user: user);
     } catch (e) {
       final error = handleException(e);

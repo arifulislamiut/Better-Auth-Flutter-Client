@@ -11,13 +11,13 @@ import 'core/configs/api_endpoints.dart';
 import 'core/types.dart';
 import 'models/response/user.dart';
 import 'plugins/phone-auth/phone_auth_plugin.dart';
+import 'plugins/two-factor/two_factor_client.dart';
 import 'service/http-service/http_service.dart';
 import 'sign-in/signin_client.dart';
 import 'sign-up/signup_client.dart';
 
 class BetterAuthClient with ErrorHandler {
   static BetterAuthClient get instance => BetterAuthClient._internal();
-  static BetterAuthLocalStorage? _localStorage;
   static HttpService? _httpService;
   static SigninClient? _signinClient;
   static SignupClient? _signupClient;
@@ -34,32 +34,31 @@ class BetterAuthClient with ErrorHandler {
     log('Initializing better auth with base URL: $baseUrl');
     log('--------------------------------');
 
+    // Initialize HTTP service first
+    HttpService.instance.init(baseUrl);
+
     _userLocalService = UserLocalServiceImpl(
       localStorageService:
           localStorage ?? BetterAuthLocalStorage.getDefaultInstance,
     );
     _signinClient = SignInClientImpl(
-      httpService: _httpService ?? HttpService.instance,
+      httpService: HttpService.instance,
       localStorage: localStorage,
       userLocalService: _userLocalService,
     );
     _signupClient = SignUpClientImpl(
-      httpService: _httpService ?? HttpService.instance,
+      httpService: HttpService.instance,
       localStorage: localStorage,
       userLocalService: _userLocalService,
     );
 
-    HttpService.instance.init(baseUrl);
-
-    _userLocalService = UserLocalServiceImpl(
-      localStorageService:
-          _localStorage ?? BetterAuthLocalStorage.getDefaultInstance,
-    );
     log('BetterAuth initialized successfully!');
-    log('-------------Getting Current User-------------------');
-    final user = await BetterAuthClient._internal().getCurrentUser();
-    log(user?.toString() ?? 'No user found');
-    log('----------------------------------------------------');
+    // Don't load user during initialization to avoid hanging the app
+    // User will be loaded when needed by the auth wrapper
+    // log('-------------Getting Current User-------------------');
+    // final user = await BetterAuthClient._internal().getCurrentUser();
+    // log(user?.toString() ?? 'No user found');
+    // log('----------------------------------------------------');
 
     return instance;
   }
@@ -174,6 +173,13 @@ class BetterAuthClient with ErrorHandler {
       _throwUninitialized();
     }
     return PhoneAuthPlugin.instance;
+  }
+
+  TwoFactorClient get twoFactor {
+    if (!_isInitialized()) {
+      _throwUninitialized();
+    }
+    return TwoFactorClientImpl();
   }
 
   /// get session
