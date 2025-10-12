@@ -6,10 +6,10 @@ import 'package:better_auth_client/better_auth_client.dart';
 import 'forgot_password.dart';
 import 'home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  BetterAuthClient.create(
-    baseUrl: 'http://192.168.223.75:4000',
+  await BetterAuthClient.create(
+    baseUrl: 'http://10.184.221.99:4000', // Your host machine's IP address
   );
   runApp(const MyApp());
 }
@@ -94,8 +94,10 @@ class _AuthScreenState extends State<AuthScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _twoFactorController = TextEditingController();
   bool _isLoading = false;
   bool _rememberMe = true;
+  bool _requiresTwoFactor = false;
   String? _error;
   late TabController _tabController;
   bool _isSignIn = true;
@@ -111,6 +113,7 @@ class _AuthScreenState extends State<AuthScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _twoFactorController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -132,29 +135,55 @@ class _AuthScreenState extends State<AuthScreen>
       return;
     }
 
-    final user = res.user;
+    // Check if 2FA is required
+    if (res.requiresTwoFactor == true) {
+      setState(() => _requiresTwoFactor = true);
+      return;
+    }
+
+    // Normal sign-in completed
+    log("Sign in successful: ${res.user?.email}");
   }
 
   Future<void> _signUp() async {
     final auth = BetterAuthClient.instance;
-    final res = await auth.signUp.email(
-      email: _emailController.text,
-      password: _passwordController.text,
-      name: _nameController.text,
-      data: {},
-      onSuccess: (ctx) {
-        log("Success ${ctx.toString()}");
-      },
-      onError: (error) {
-        setState(() => _error = error.message);
-      },
-    );
-    if (res.error != null) {
-      setState(() => _error = res.error!.message);
+    try {
+      final res = await auth.signUp.email(
+        email: _emailController.text,
+        password: _passwordController.text,
+        name: _nameController.text,
+        data: {},
+        onSuccess: (ctx) {
+          log("Success ${ctx.toString()}");
+        },
+        onError: (error) {
+          log("Sign up error: ${error.message}");
+          setState(() => _error = error.message);
+        },
+      );
+      if (res.error != null) {
+        log("Sign up result error: ${res.error!.message}");
+        setState(() => _error = res.error!.message);
+      } else {
+        log("Sign up successful: ${res.user?.email}");
+      }
+    } catch (e) {
+      log("Sign up exception: $e");
+      setState(() => _error = 'Exception: $e');
     }
   }
 
   Future<void> _submit() async {
+    if (_requiresTwoFactor) {
+      // Handle 2FA verification
+      if (_twoFactorController.text.isEmpty) {
+        setState(() => _error = 'Please enter your 2FA code');
+        return;
+      }
+      await _verifyTwoFactor();
+      return;
+    }
+
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       setState(() => _error = 'Please fill in all fields');
       return;
@@ -205,6 +234,45 @@ class _AuthScreenState extends State<AuthScreen>
       );
     } catch (e) {
       setState(() => _error = e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _verifyTwoFactor() async {
+    if (_twoFactorController.text.isEmpty) {
+      setState(() => _error = 'Please enter your 2FA code');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final auth = BetterAuthClient.instance;
+      final res = await auth.signIn.twoFactor(
+        code: _twoFactorController.text,
+        onSuccess: (ctx) {
+          log("2FA verification success ${ctx.toString()}");
+        },
+        onError: (error) {
+          setState(() => _error = error.message);
+        },
+      );
+
+      if (res.error != null) {
+        setState(() => _error = res.error!.message);
+      } else {
+        log("2FA sign in successful: ${res.user?.email}");
+        setState(() => _requiresTwoFactor = false);
+      }
+    } catch (e) {
+      log("2FA verification exception: $e");
+      setState(() => _error = 'Exception: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -386,6 +454,27 @@ class _AuthScreenState extends State<AuthScreen>
                   enabled: !_isLoading,
                 ),
                 const SizedBox(height: 16),
+                if (_requiresTwoFactor) ...[
+                  const Text(
+                    'Two-Factor Authentication',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _twoFactorController,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter 6-digit code',
+                      prefixIcon: Icon(Icons.security),
+                    ),
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    enabled: !_isLoading,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 Row(
                   children: [
                     Checkbox(
@@ -424,6 +513,23 @@ class _AuthScreenState extends State<AuthScreen>
                   ],
                 ),
                 const SizedBox(height: 24),
+                if (_requiresTwoFactor) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton(
+                      onPressed: _isLoading ? null : () {
+                        setState(() {
+                          _requiresTwoFactor = false;
+                          _twoFactorController.clear();
+                          _error = null;
+                        });
+                      },
+                      child: const Text('Back to Sign In'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -439,7 +545,9 @@ class _AuthScreenState extends State<AuthScreen>
                             ),
                           )
                         : Text(
-                            _isSignIn ? 'Sign In' : 'Sign Up',
+                            _requiresTwoFactor
+                                ? 'Verify 2FA'
+                                : (_isSignIn ? 'Sign In' : 'Sign Up'),
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                             ),

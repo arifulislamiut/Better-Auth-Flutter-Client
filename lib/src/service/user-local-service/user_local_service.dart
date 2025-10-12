@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:better_auth_client/better_auth_client.dart';
-import 'package:better_auth_client/src/service/local-storage-service/better_auth_local_storage_service.dart';
 
 abstract class UserLocalService {
   Stream<User?> get userChanges;
@@ -18,7 +17,10 @@ class UserLocalServiceImpl extends UserLocalService {
   final String _userKey = 'user-key';
   final StreamController<User?> _userController =
       StreamController<User?>.broadcast();
-  UserLocalServiceImpl({required this.localStorageService});
+  UserLocalServiceImpl({required this.localStorageService}) {
+    // Emit initial null value to indicate no user is loaded yet
+    _userController.add(null);
+  }
   @override
   Future<void> deleteUser() async {
     try {
@@ -67,9 +69,12 @@ class UserLocalServiceImpl extends UserLocalService {
     try {
       await deleteUser();
       final userJson = user.toJson();
+      print('📝 UserLocalService: Adding user to stream: ${user.email}');
       _userController.add(user);
       await localStorageService.create(_userKey, jsonEncode(userJson));
+      print('✅ UserLocalService: User saved successfully');
     } catch (e) {
+      print('❌ UserLocalService: Error saving user: $e');
       rethrow;
     }
   }

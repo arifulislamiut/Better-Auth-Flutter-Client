@@ -29,7 +29,11 @@ class HttpService with HttpHelper {
     Map<String, String>? headers,
     Map<String, dynamic>? body,
   }) => handleRequest(
-    () => http.patch(getFullUrl(baseUrl, path), headers: headers, body: body),
+    () => http.patch(
+      getFullUrl(baseUrl, path),
+      headers: headers,
+      body: body != null ? jsonEncode(body) : null,
+    ),
   );
 
   Future<BetterAuthHttpResponse> postRequest(
@@ -40,7 +44,7 @@ class HttpService with HttpHelper {
     () => http.post(
       getFullUrl(baseUrl, path),
       headers: headers,
-      body: jsonEncode(body),
+      body: body != null ? jsonEncode(body) : null,
     ),
   );
 
@@ -49,6 +53,10 @@ class HttpService with HttpHelper {
     Map<String, String>? headers,
     Map<String, dynamic>? body,
   }) => handleRequest(
-    () => http.put(getFullUrl(baseUrl, path), headers: headers, body: body),
+    () => http.put(
+      getFullUrl(baseUrl, path),
+      headers: headers,
+      body: body != null ? jsonEncode(body) : null,
+    ),
   );
 }
