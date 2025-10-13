@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:better_auth_client/better_auth_client.dart';
+import 'package:better_auth_client/src/plugins/phone-auth/src/phone_number_auth_plugin_impl.dart';
 
 void main() {
   group('TwoFactorClient', () {
@@ -33,6 +34,20 @@ void main() {
 
       expect(response.enabled, true);
       expect(response.backupCodes, '111111\n222222\n333333');
+    });
+  });
+
+  group('PhoneAuthPlugin', () {
+    test('PhoneAuthPlugin instance can be accessed', () {
+      final plugin = PhoneAuthPlugin.instance;
+      expect(plugin, isNotNull);
+      expect(plugin, isA<PhoneAuthPlugin>());
+    });
+
+    test('PhoneNumberAuthPluginImpl can be instantiated', () {
+      final plugin = PhoneNumberAuthPluginImpl();
+      expect(plugin, isNotNull);
+      expect(plugin, isA<PhoneAuthPlugin>());
     });
   });
 }
