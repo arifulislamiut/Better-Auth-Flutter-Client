@@ -95,9 +95,13 @@ class _AuthScreenState extends State<AuthScreen>
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   final _twoFactorController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _phoneOtpController = TextEditingController();
   bool _isLoading = false;
   bool _rememberMe = true;
   bool _requiresTwoFactor = false;
+  bool _isPhoneAuth = false;
+  bool _phoneOtpSent = false;
   String? _error;
   late TabController _tabController;
   bool _isSignIn = true;
@@ -105,7 +109,7 @@ class _AuthScreenState extends State<AuthScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -114,6 +118,8 @@ class _AuthScreenState extends State<AuthScreen>
     _passwordController.dispose();
     _nameController.dispose();
     _twoFactorController.dispose();
+    _phoneController.dispose();
+    _phoneOtpController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -181,6 +187,23 @@ class _AuthScreenState extends State<AuthScreen>
         return;
       }
       await _verifyTwoFactor();
+      return;
+    }
+
+    if (_isPhoneAuth) {
+      if (_phoneOtpSent) {
+        if (_phoneOtpController.text.isEmpty) {
+          setState(() => _error = 'Please enter the OTP code');
+          return;
+        }
+        await _verifyPhoneOtp();
+      } else {
+        if (_phoneController.text.isEmpty) {
+          setState(() => _error = 'Please enter your phone number');
+          return;
+        }
+        await _sendPhoneOtp();
+      }
       return;
     }
 
@@ -308,6 +331,78 @@ class _AuthScreenState extends State<AuthScreen>
     }
   }
 
+  Future<void> _sendPhoneOtp() async {
+    if (_phoneController.text.isEmpty) {
+      setState(() => _error = 'Please enter your phone number');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await BetterAuthClient.instance.phoneNumber.sendOtp(
+        phone: _phoneController.text,
+        onSuccess: (response) {
+          log("OTP sent successfully: $response");
+          setState(() => _phoneOtpSent = true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('OTP sent to your phone!')),
+            );
+          }
+        },
+        onError: (error) {
+          setState(() => _error = error.message);
+        },
+      );
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _verifyPhoneOtp() async {
+    if (_phoneController.text.isEmpty || _phoneOtpController.text.isEmpty) {
+      setState(() => _error = 'Please enter phone number and OTP');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await BetterAuthClient.instance.phoneNumber.verify(
+        phone: _phoneController.text,
+        otp: _phoneOtpController.text,
+        onSuccess: (response) {
+          log("Phone verification successful: $response");
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Phone verified successfully!')),
+            );
+          }
+        },
+        onError: (error) {
+          setState(() => _error = error.message);
+        },
+      );
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -363,11 +458,20 @@ class _AuthScreenState extends State<AuthScreen>
                   child: TabBar(
                     controller: _tabController,
                     onTap: (index) {
-                      setState(() => _isSignIn = index == 0);
+                      setState(() {
+                        _isSignIn = index == 0;
+                        _isPhoneAuth = index == 2;
+                        if (index != 2) {
+                          _phoneOtpSent = false;
+                          _phoneController.clear();
+                          _phoneOtpController.clear();
+                        }
+                      });
                     },
                     tabs: const [
                       Tab(text: 'Sign In'),
                       Tab(text: 'Sign Up'),
+                      Tab(text: 'Phone'),
                     ],
                     labelColor: const Color(0xFF0066FF),
                     unselectedLabelColor: Colors.grey,
@@ -399,9 +503,10 @@ class _AuthScreenState extends State<AuthScreen>
                     ),
                   ),
                 const SizedBox(height: 24),
-                if (!_isSignIn) ...[
+                if (_isPhoneAuth) ...[
+                  // Phone Authentication Fields
                   const Text(
-                    'Name',
+                    'Phone Number',
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       color: Colors.grey,
@@ -409,54 +514,59 @@ class _AuthScreenState extends State<AuthScreen>
                   ),
                   const SizedBox(height: 8),
                   TextField(
-                    controller: _nameController,
+                    controller: _phoneController,
                     decoration: const InputDecoration(
-                      hintText: 'Enter your name',
-                      prefixIcon: Icon(Icons.person_outline),
+                      hintText: '+1234567890',
+                      prefixIcon: Icon(Icons.phone_outlined),
                     ),
-                    enabled: !_isLoading,
+                    keyboardType: TextInputType.phone,
+                    enabled: !_isLoading && !_phoneOtpSent,
                   ),
                   const SizedBox(height: 16),
-                ],
-                const Text(
-                  'Email',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    hintText: 'Enter your email',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  enabled: !_isLoading,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Password',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    hintText: 'Enter your password',
-                    prefixIcon: Icon(Icons.lock_outline),
-                  ),
-                  obscureText: true,
-                  enabled: !_isLoading,
-                ),
-                const SizedBox(height: 16),
-                if (_requiresTwoFactor) ...[
+                  if (_phoneOtpSent) ...[
+                    const Text(
+                      'OTP Code',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _phoneOtpController,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter 6-digit OTP',
+                        prefixIcon: Icon(Icons.security),
+                      ),
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      enabled: !_isLoading,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ] else ...[
+                  // Email Authentication Fields
+                  if (!_isSignIn) ...[
+                    const Text(
+                      'Name',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter your name',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                      enabled: !_isLoading,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   const Text(
-                    'Two-Factor Authentication',
+                    'Email',
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       color: Colors.grey,
@@ -464,16 +574,54 @@ class _AuthScreenState extends State<AuthScreen>
                   ),
                   const SizedBox(height: 8),
                   TextField(
-                    controller: _twoFactorController,
+                    controller: _emailController,
                     decoration: const InputDecoration(
-                      hintText: 'Enter 6-digit code',
-                      prefixIcon: Icon(Icons.security),
+                      hintText: 'Enter your email',
+                      prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
+                    keyboardType: TextInputType.emailAddress,
                     enabled: !_isLoading,
                   ),
                   const SizedBox(height: 16),
+                  const Text(
+                    'Password',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter your password',
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    obscureText: true,
+                    enabled: !_isLoading,
+                  ),
+                  const SizedBox(height: 16),
+                  if (_requiresTwoFactor) ...[
+                    const Text(
+                      'Two-Factor Authentication',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _twoFactorController,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter 6-digit code',
+                        prefixIcon: Icon(Icons.security),
+                      ),
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      enabled: !_isLoading,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ],
                 Row(
                   children: [
@@ -518,13 +666,15 @@ class _AuthScreenState extends State<AuthScreen>
                     width: double.infinity,
                     height: 50,
                     child: OutlinedButton(
-                      onPressed: _isLoading ? null : () {
-                        setState(() {
-                          _requiresTwoFactor = false;
-                          _twoFactorController.clear();
-                          _error = null;
-                        });
-                      },
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              setState(() {
+                                _requiresTwoFactor = false;
+                                _twoFactorController.clear();
+                                _error = null;
+                              });
+                            },
                       child: const Text('Back to Sign In'),
                     ),
                   ),
@@ -547,7 +697,9 @@ class _AuthScreenState extends State<AuthScreen>
                         : Text(
                             _requiresTwoFactor
                                 ? 'Verify 2FA'
-                                : (_isSignIn ? 'Sign In' : 'Sign Up'),
+                                : _isPhoneAuth
+                                    ? (_phoneOtpSent ? 'Verify OTP' : 'Send OTP')
+                                    : (_isSignIn ? 'Sign In' : 'Sign Up'),
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                             ),

@@ -7,4 +7,10 @@ abstract class ApiEndpoints {
   static const String sendVerificationEmail =
       '$_prefix/send-verification-email';
   static const String forgetPassword = '$_prefix/forget-password';
+
+  // Phone Authentication
+  static const String phoneSendOtp = '$_prefix/phone/send-otp';
+  static const String phoneVerifyOtp = '$_prefix/phone/verify-otp';
+  static const String phoneForgetPassword = '$_prefix/phone/forget-password';
+  static const String phoneResetPassword = '$_prefix/phone/reset-password';
 }
