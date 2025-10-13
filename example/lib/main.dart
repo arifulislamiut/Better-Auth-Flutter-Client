@@ -109,7 +109,7 @@ class _AuthScreenState extends State<AuthScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -179,6 +179,40 @@ class _AuthScreenState extends State<AuthScreen>
     }
   }
 
+  Future<void> _signInAnonymously() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final auth = BetterAuthClient.instance;
+      final res = await auth.signIn.anonymous(
+        onSuccess: (user) {
+          log("Anonymous sign-in success: ${user.id}");
+        },
+        onError: (error) {
+          log("Anonymous sign-in error: ${error.message}");
+          setState(() => _error = error.message);
+        },
+      );
+
+      if (res.error != null) {
+        log("Anonymous sign-in result error: ${res.error!.message}");
+        setState(() => _error = res.error!.message);
+      } else {
+        log("Anonymous sign-in successful: ${res.user?.id}");
+      }
+    } catch (e) {
+      log("Anonymous sign-in exception: $e");
+      setState(() => _error = 'Exception: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (_requiresTwoFactor) {
       // Handle 2FA verification
@@ -187,6 +221,12 @@ class _AuthScreenState extends State<AuthScreen>
         return;
       }
       await _verifyTwoFactor();
+      return;
+    }
+
+    // Handle anonymous/guest sign-in
+    if (_tabController.index == 3) {
+      await _signInAnonymously();
       return;
     }
 
@@ -466,12 +506,14 @@ class _AuthScreenState extends State<AuthScreen>
                           _phoneController.clear();
                           _phoneOtpController.clear();
                         }
+                        _error = null;
                       });
                     },
                     tabs: const [
                       Tab(text: 'Sign In'),
                       Tab(text: 'Sign Up'),
                       Tab(text: 'Phone'),
+                      Tab(text: 'Guest'),
                     ],
                     labelColor: const Color(0xFF0066FF),
                     unselectedLabelColor: Colors.grey,
@@ -503,7 +545,38 @@ class _AuthScreenState extends State<AuthScreen>
                     ),
                   ),
                 const SizedBox(height: 24),
-                if (_isPhoneAuth) ...[
+                if (_tabController.index == 3) ...[
+                  // Anonymous/Guest Authentication
+                  Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.person_outline,
+                          size: 80,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Sign in as Guest',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Continue without creating an account.\nYou can create an account later.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else if (_isPhoneAuth) ...[
                   // Phone Authentication Fields
                   const Text(
                     'Phone Number',
@@ -697,9 +770,13 @@ class _AuthScreenState extends State<AuthScreen>
                         : Text(
                             _requiresTwoFactor
                                 ? 'Verify 2FA'
-                                : _isPhoneAuth
-                                    ? (_phoneOtpSent ? 'Verify OTP' : 'Send OTP')
-                                    : (_isSignIn ? 'Sign In' : 'Sign Up'),
+                                : _tabController.index == 3
+                                    ? 'Continue as Guest'
+                                    : _isPhoneAuth
+                                        ? (_phoneOtpSent
+                                            ? 'Verify OTP'
+                                            : 'Send OTP')
+                                        : (_isSignIn ? 'Sign In' : 'Sign Up'),
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                             ),
