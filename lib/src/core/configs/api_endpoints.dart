@@ -13,4 +13,7 @@ abstract class ApiEndpoints {
   static const String phoneVerifyOtp = '$_prefix/phone/verify-otp';
   static const String phoneForgetPassword = '$_prefix/phone/forget-password';
   static const String phoneResetPassword = '$_prefix/phone/reset-password';
+
+  // Anonymous Authentication
+  static const String signInAnonymous = '$_prefix/sign-in/anonymous';
 }

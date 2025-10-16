@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:better_auth_client/src/core/configs/api_endpoints.dart';
 import 'package:better_auth_client/src/core/configs/enums/providers.dart';
 import 'package:better_auth_client/src/core/handlers/error-handler/models/better_auth_exception.dart';
@@ -26,12 +27,29 @@ class SignInClientImpl with ErrorHandler implements SigninClient {
     Success<User>? onSuccess,
     Error<BetterAuthException>? onError,
   }) async {
-    // TODO: implement anonymous
-    throw UnimplementedError();
+    try {
+      final response = await _httpService.postRequest(
+        ApiEndpoints.signInAnonymous,
+      );
+
+      final user = User.fromJson(response.body['data']['user']);
+      await _userLocalService.setUser(user);
+      
+      log('Anonymous sign-in successful: ${user.id}');
+      onSuccess?.call(user);
+
+      return (error: null, user: user);
+    } catch (e) {
+      log('Anonymous sign-in failed: $e');
+      final error = handleException(e);
+      onError?.call(error);
+      return (error: error, user: null);
+    }
   }
 
   @override
-  Future<({BetterAuthException? error, User? user, bool? requiresTwoFactor})> email({
+  Future<({BetterAuthException? error, User? user, bool? requiresTwoFactor})>
+  email({
     required String email,
     required String password,
     Success<User>? onSuccess,
@@ -45,7 +63,8 @@ class SignInClientImpl with ErrorHandler implements SigninClient {
       );
 
       // Check if 2FA is required
-      final requiresTwoFactor = response.body['data']?['requiresTwoFactor'] as bool? ?? false;
+      final requiresTwoFactor =
+          response.body['data']?['requiresTwoFactor'] as bool? ?? false;
 
       if (requiresTwoFactor) {
         // Return partial user data and 2FA requirement flag
