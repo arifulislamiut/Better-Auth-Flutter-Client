@@ -35,7 +35,7 @@ class BetterAuthClient with ErrorHandler {
     log('--------------------------------');
 
     // Initialize HTTP service first
-    HttpService.instance.init(baseUrl);
+    _httpService = HttpService.instance..init(baseUrl);
 
     _userLocalService = UserLocalServiceImpl(
       localStorageService:
@@ -74,6 +74,9 @@ class BetterAuthClient with ErrorHandler {
   }
 
   SigninClient get signIn {
+    if (!_isInitialized()) {
+      _throwUninitialized();
+    }
     return _signinClient!;
   }
 
@@ -117,15 +120,9 @@ class BetterAuthClient with ErrorHandler {
 
       log('Password reset email sent');
       onSuccess?.call(response!);
-      return;
     } catch (e) {
-      // final error = BetterAuthException(
-      //   message: e.toString(),
-      //   code: BetterAuthExceptionCode,
-      // );
-      // log(error.message);
-      // onError?.call(error);
-      return;
+      final error = handleException(e);
+      onError?.call(error);
     }
   }
 
