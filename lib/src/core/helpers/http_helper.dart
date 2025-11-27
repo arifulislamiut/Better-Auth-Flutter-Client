@@ -14,7 +14,11 @@ mixin HttpHelper {
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final body = jsonDecode(res.body);
-        return BetterAuthHttpResponse(body: body, statusCode: res.statusCode);
+        return BetterAuthHttpResponse(
+          body: body,
+          statusCode: res.statusCode,
+          headers: res.headers,
+        );
       }
 
       throw _parseResponseException(res);

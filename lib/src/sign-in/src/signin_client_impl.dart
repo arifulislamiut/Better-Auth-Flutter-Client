@@ -80,7 +80,23 @@ class SignInClientImpl with ErrorHandler implements SigninClient {
         return (error: null, user: user, requiresTwoFactor: true);
       } else {
         // Normal sign-in without 2FA
-        final user = User.fromJson(response.body);
+        // Extract session cookie from response headers first
+        String? sessionCookie;
+        if (response.headers != null) {
+          final setCookieHeader = response.headers!['set-cookie'];
+          if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
+            sessionCookie = setCookieHeader;
+            log('Extracted session cookie from headers');
+          }
+        }
+
+        // Create user object with cookie included
+        final userData = response.body;
+        if (sessionCookie != null) {
+          userData['cookie'] = sessionCookie; // Add cookie to user data
+        }
+        final user = User.fromJson(userData);
+
         await _userLocalService.setUser(user);
         onSuccess?.call(user);
         return (error: null, user: user, requiresTwoFactor: false);

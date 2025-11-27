@@ -7,6 +7,7 @@ class User {
   final DateTime? updatedAt;
   final String? image;
   final String? token;
+  final String? cookie; // Session cookie from Set-Cookie header
   final Map<String, dynamic>? data;
 
   User({
@@ -18,12 +19,14 @@ class User {
     this.updatedAt,
     this.image,
     this.token,
+    this.cookie,
     this.data,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     final userMap = json['user'];
     final token = json['token'];
+    final cookie = json['cookie']; // Extract cookie if provided
 
     // extract known fields
     final knownFields = [
@@ -55,6 +58,7 @@ class User {
       updatedAt: DateTime.parse(userMap['updatedAt'] as String),
       image: userMap['image'] as String?,
       token: token as String?,
+      cookie: cookie as String?,
       data: additionalData.isNotEmpty ? additionalData : null,
     );
   }
@@ -78,7 +82,12 @@ class User {
       userMap.addAll(data!);
     }
 
-    return {'redirect': false, 'token': token, 'user': userMap};
+    return {
+      'redirect': false,
+      'token': token,
+      'cookie': cookie,
+      'user': userMap,
+    };
   }
 
   @override
